@@ -1,0 +1,98 @@
+import { NextResponse } from "next/server"
+import Razorpay from "razorpay"
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+})
+
+function getCountry(req: Request) {
+  if (process.env.NODE_ENV === "development") {
+    return "IN" // force Razorpay locally
+  }
+
+  return (
+    req.headers.get("x-vercel-ip-country") ||
+    req.headers.get("cf-ipcountry") ||
+    "US"
+  )
+}
+
+export async function POST(req: Request) {
+  const country = getCountry(req)
+
+  /* ===============================
+     🇮🇳 INDIA → Razorpay
+  =============================== */
+  if (country === "IN") {
+    const order = await razorpay.orders.create({
+      amount: 39900, // ₹399 (in paise)
+      currency: "INR",
+      receipt: `doc_${Date.now()}`,
+    })
+
+    return NextResponse.json({
+      gateway: "razorpay",
+      order,
+      key: process.env.RAZORPAY_KEY_ID,
+    })
+  }
+
+  /* ===============================
+     🌍 GLOBAL → PayPal
+  =============================== */
+  const auth = Buffer.from(
+    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`
+  ).toString("base64")
+
+  const tokenRes = await fetch(
+    "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    }
+  )
+
+  const { access_token } = await tokenRes.json()
+
+  const orderRes = await fetch(
+    "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              currency_code: "USD",
+              value: "5.00",
+            },
+          },
+        ],
+        application_context: {
+          return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/handwritten-to-doc/preview?paid=1`,
+          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/handwritten-to-doc/preview`,
+        },
+      }),
+    }
+  )
+
+  const order = await orderRes.json()
+
+  const approveUrl = order.links.find(
+    (l: any) => l.rel === "approve"
+  )?.href
+
+  return NextResponse.json({
+    gateway: "paypal",
+    approveUrl,
+  })
+}

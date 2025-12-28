@@ -1,0 +1,23 @@
+import crypto from "crypto"
+import { NextResponse } from "next/server"
+
+export async function POST(req: Request) {
+  const body = await req.text()
+  const signature = req.headers.get("x-razorpay-signature")!
+
+  const expected = crypto
+    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
+    .update(body)
+    .digest("hex")
+
+  if (expected !== signature) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
+  }
+
+  const event = JSON.parse(body)
+
+  // TODO: mark order as paid in DB (later)
+  console.log("Razorpay webhook verified:", event.event)
+
+  return NextResponse.json({ received: true })
+}

@@ -1,0 +1,43 @@
+// app/api/handwritten/export/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const pythonUrl = process.env.PY_EXPORT_URL || "http://localhost:8001/export";
+
+  try {
+    const body = await req.json();
+
+    const response = await fetch(pythonUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      return new NextResponse(text, { status: response.status });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+
+    const headers = new Headers();
+    headers.set(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition) headers.set("Content-Disposition", disposition);
+
+    return new NextResponse(Buffer.from(arrayBuffer), {
+      status: 200,
+      headers,
+    });
+  } catch (err: any) {
+    console.error("Export proxy error:", err);
+    return new NextResponse(
+      JSON.stringify({ error: err.message || "Export failed" }),
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,155 @@
+# export_service/main.py
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from html2docx import html2docx
+from docx import Document
+from docx.shared import Pt, Inches
+import io
+import re
+
+app = FastAPI(title="Ink2Doc Exporter")
+
+# CORS (lock this down in prod)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ✅ Guard WeasyPrint import (DO NOT import at top)
+try:
+    from weasyprint import HTML
+    WEASY_AVAILABLE = True
+except Exception:
+    WEASY_AVAILABLE = False
+
+
+class ExportRequest(BaseModel):
+    html: str
+    title: str | None = "document"
+
+
+def sanitize_filename(name: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_\-\.]", "_", name)
+    return (safe or "document")[:200]
+
+
+def polish_docx(doc: Document):
+    """Apply professional Word formatting"""
+
+    # ---------- Paragraphs & headings ----------
+    for p in doc.paragraphs:
+        text = p.text.strip().lower()
+
+        if text == "employment application":
+            p.style = "Heading 1"
+        elif text in ["application information", "previous employment history"]:
+            p.style = "Heading 2"
+
+        for run in p.runs:
+            run.font.name = "Times New Roman"
+            run.font.size = Pt(11)
+            if p.style and p.style.name.startswith("Heading"):
+                run.font.color.rgb = None
+
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(12 if p.style and p.style.name.startswith("Heading") else 6)
+
+    # ---------- Tables ----------
+    for table in doc.tables:
+        table.style = "Table Grid"
+        table.autofit = False
+        table.allow_autofit = False
+
+        total_width = Inches(6.5)
+        col_width = total_width / len(table.columns)
+
+        for row in table.rows:
+            for cell in row.cells:
+                cell.width = col_width
+                for p in cell.paragraphs:
+                    for run in p.runs:
+                        run.font.name = "Times New Roman"
+                        run.font.size = Pt(11)
+                    p.paragraph_format.space_before = 0
+                    p.paragraph_format.space_after = 0
+
+
+@app.post("/export")
+async def export_doc(req: ExportRequest):
+    if not req.html.strip():
+        raise HTTPException(status_code=400, detail="missing html")
+
+    buf = html2docx(req.html, title=req.title or "document")
+    buf.seek(0)
+
+    doc = Document(buf)
+    polish_docx(doc)
+
+    output = io.BytesIO()
+    doc.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{sanitize_filename(req.title or "Converted_Document")}.docx"'
+        },
+    )
+
+
+@app.post("/export/pdf")
+async def export_pdf(req: ExportRequest):
+    if not WEASY_AVAILABLE:
+        raise HTTPException(
+            status_code=501,
+            detail="PDF export disabled locally. Works in production (Linux)."
+        )
+
+    if not req.html.strip():
+        raise HTTPException(status_code=400, detail="missing html")
+
+    html = req.html
+    if "<html" not in html.lower():
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{
+                    font-family: "Times New Roman", serif;
+                    font-size: 11pt;
+                    line-height: 1.4;
+                    margin: 24px;
+                }}
+                h1 {{ font-size: 20pt; }}
+                h2 {{ font-size: 15pt; }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                th, td {{
+                    border: 1px solid #444;
+                    padding: 6px;
+                }}
+            </style>
+        </head>
+        <body>{html}</body>
+        </html>
+        """
+
+    pdf_bytes = HTML(string=html).write_pdf()
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{sanitize_filename(req.title or "Converted_Document")}.pdf"'
+        },
+    )
