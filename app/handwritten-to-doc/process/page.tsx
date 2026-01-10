@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Header from "@/components/header";
@@ -8,8 +8,7 @@ import Footer from "@/components/footer";
 import ProcessingStatus from "@/components/processing-status";
 import { getJob, updateJob } from "@/lib/jobStore";
 
-const POLL_INTERVAL = 2000; // 2s
-const MAX_POLLS = 60;       // ~2 minutes
+type JobState = "queued" | "processing" | "ready" | "error";
 
 export default function ProcessPage() {
   const router = useRouter();
@@ -17,6 +16,10 @@ export default function ProcessPage() {
   const jobId = searchParams.get("jobId");
 
   const startedRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ React-safe UI state
+  const [jobState, setJobState] = useState<JobState>("processing");
 
   useEffect(() => {
     if (!jobId) {
@@ -24,85 +27,82 @@ export default function ProcessPage() {
       return;
     }
 
-    if (startedRef.current) return;
-    startedRef.current = true;
-
     const job = getJob();
-    if (!job || job.jobId !== jobId) {
+    if (!job || job.jobId !== jobId || !job.filePath) {
       router.replace("/handwritten-to-doc/upload");
       return;
     }
 
-    const { filePath, strict } = job;
+    // 🔒 Start OCR only once
+    if (!startedRef.current) {
+      startedRef.current = true;
 
-    async function enqueueAndPoll() {
-      try {
-        /* 1️⃣ ENQUEUE */
-        const enqueueRes = await fetch("/api/handwritten/process", {
+      (async () => {
+        const startRes = await fetch("/api/handwritten/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             jobId,
-            filepath: filePath,
-            strict,
+            filePath: job.filePath,
           }),
         });
 
-        if (!enqueueRes.ok) {
-          throw new Error("Failed to enqueue job");
+        if (!startRes.ok) {
+          console.error("❌ Failed to start OCR:", await startRes.text());
+          updateJob({ state: "error" });
+          setJobState("error");
+          return;
         }
 
         updateJob({ state: "processing" });
-
-        /* 2️⃣ POLL RESULT */
-        let polls = 0;
-
-        const poll = async () => {
-          polls++;
-
-          try {
-            const res = await fetch(
-              `/api/handwritten/result/${jobId}`,
-              { cache: "no-store" }
-            );
-
-            if (res.ok) {
-              const data = await res.json();
-
-              if (data?.html) {
-                updateJob({
-                  state: "ready",
-                  html: data.html,
-                });
-
-                router.replace(
-                  `/handwritten-to-doc/preview?jobId=${jobId}`
-                );
-                return;
-              }
-            }
-          } catch (e) {
-            console.warn("Polling failed, retrying…");
-          }
-
-          if (polls >= MAX_POLLS) {
-            updateJob({ state: "error" });
-            router.replace("/handwritten-to-doc/upload");
-            return;
-          }
-
-          setTimeout(poll, POLL_INTERVAL);
-        };
-
-        poll();
-      } catch (err) {
-        console.error("❌ Processing error:", err);
-        updateJob({ state: "error" });
-        router.replace("/handwritten-to-doc/upload");
-      }
+        setJobState("processing");
+      })();
     }
 
-    enqueueAndPoll();
+    // 🔁 POLLING (fixed)
+    intervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/job-status?jobId=${jobId}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        updateJob(data);
+        setJobState(data.state);
+
+        if (data.state === "ready" && data.contentJson) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+
+          updateJob({
+            state: "ready",
+            contentJson: data.contentJson,
+          });
+
+          router.replace(`/handwritten-to-doc/preview?jobId=${jobId}`);
+        }
+
+        if (data.state === "error") {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          router.replace("/handwritten-to-doc/upload");
+        }
+      } catch (err) {
+        console.error("❌ Polling failed:", err);
+      }
+    }, 2000);
+
+    // 🧹 CLEANUP (critical)
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [jobId, router]);
 
   return (
@@ -110,7 +110,7 @@ export default function ProcessPage() {
       <Header />
 
       <main className="flex-1 flex items-center justify-center bg-muted/30">
-        <ProcessingStatus state="processing" />
+        <ProcessingStatus state={jobState} />
       </main>
 
       <Footer />

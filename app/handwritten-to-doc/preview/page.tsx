@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
-
+import { JsonEditor } from "@/components/editor/JsonEditor";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import HtmlPreview from "@/components/HtmlPreview.client";
 import { loadJob, updateJob } from "@/lib/jobStore";
 import type { JobData } from "@/types/job";
+import { generateHTML } from "@tiptap/html";
+import StarterKit from "@tiptap/starter-kit";
 
 export default function PreviewPage() {
   const router = useRouter();
@@ -16,7 +17,6 @@ export default function PreviewPage() {
   const jobId = searchParams.get("jobId");
 
   const [job, setJob] = useState<JobData | null>(null);
-  const [documentHtml, setDocumentHtml] = useState<string | null>(null);
   const isPaid = job?.state === "paid";
 
   const [showPayConfirm, setShowPayConfirm] = useState(false);
@@ -50,23 +50,22 @@ export default function PreviewPage() {
     }
 
     // ✅ If HTML already exists → render immediately
-    if (storedJob.html) {
+     if (storedJob.contentJson) {
       setJob(storedJob);
-      setDocumentHtml(storedJob.html);
       return;
     }
+
 
     // 🔄 Otherwise fetch from backend
     (async () => {
       try {
-        const html = await fetchResult(jobId);
+        const contentJson = await fetchResult(jobId);
 
-        updateJob({ html });
+        updateJob({ contentJson });
 
         const fresh = loadJob();
-        if (fresh?.html) {
+        if (fresh?.contentJson) {
           setJob(fresh);
-          setDocumentHtml(fresh.html);
         }
       } catch (err) {
         console.error("❌ Failed to load result:", err);
@@ -94,10 +93,9 @@ export default function PreviewPage() {
         updateJob({ state: "paid" });
 
         const freshJob = loadJob();
-        if (freshJob?.html) {
-          setJob(freshJob);
-          setDocumentHtml(freshJob.html);
-        }
+        if (freshJob?.contentJson) {
+            setJob(freshJob);
+          }
 
         window.history.replaceState(
           {},
@@ -112,29 +110,39 @@ export default function PreviewPage() {
     capturePayPal();
   }, [jobId, searchParams]);
 
+  function tiptapToHtml(doc: any) {
+    return generateHTML(doc, [StarterKit]);
+  }
+
   /* ================= DOWNLOAD (READ-ONLY) ================= */
-  const handleDownload = async (type: "docx" | "pdf") => {
-    if (!documentHtml) return;
-
-    // ✅ local UI state only
-    setState("exporting");
-
-    const endpoint =
-      type === "pdf"
-        ? "/api/handwritten/export/pdf"
-        : "/api/handwritten/export";
+  const handleDownload = async (type: "docx" | "pdf" = "docx") => {
+    if (!job?.contentJson) return;
 
     try {
+      setState("exporting");
+
+      const endpoint =
+        type === "pdf"
+          ? "/api/export-pdf"      // optional: if you support PDF via JSON
+          : "/api/export-docx";
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          html: documentHtml,
-          title: "Converted_Document",
+          fileName: "Converted_Document",
+          contentJson: job.contentJson, // ✅ TipTap JSON
+          templateSlug: "default",      // or job.templateSlug
+          designKey: undefined,         // pass if supported
+          brand: null,
+          signatory: null,
         }),
       });
 
-      if (!res.ok) throw new Error("Export failed");
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Export failed");
+      }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -145,19 +153,20 @@ export default function PreviewPage() {
         type === "pdf"
           ? "Converted_Document.pdf"
           : "Converted_Document.docx";
+
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
 
       setState("complete");
-      updateJob({ state: "paid" });
     } catch (err) {
       console.error("❌ export failed:", err);
       setState("error");
-      updateJob({ state: "error" });
     }
   };
+
+
 
   /* ================= PAYMENT ================= */
   const handlePaidDownload = async (type: "docx" | "pdf") => {
@@ -166,8 +175,11 @@ export default function PreviewPage() {
       return;
     }
 
+    // if (isPaid) {
+    //   router.push(`/handwritten-to-doc/editor?jobId=${job.jobId}`);
+    // }
     if (isPaid) {
-      handleDownload(type);
+      // already paid → just allow download from preview
       return;
     }
 
@@ -200,37 +212,35 @@ export default function PreviewPage() {
         order_id: data.order.id,
         name: "Handwritten → DOC",
         description: "One-time document conversion",
+        // handler: () => {
+        //   if (!job) return;
+        //   updateJob({ state: "paid" });
+        //   router.push(`/handwritten-to-doc/editor?jobId=${job.jobId}`);
+        // },
         handler: () => {
+          if (!job) return;
           updateJob({ state: "paid" });
 
-          const freshJob = loadJob();
-          if (freshJob?.html) {
-            setJob(freshJob);
-            setDocumentHtml(freshJob.html);
-          }
-
-          setShowPayConfirm(false);
-          setPendingType(null);
+          // stay on preview, just re-render UI
+          setJob({ ...job, state: "paid" });
         },
       });
     }
   };
 
   async function fetchResult(jobId: string) {
-    const res = await fetch(`/api/handwritten/result/${jobId}`);
-
-    if (!res.ok) {
-      throw new Error("Result not ready");
-    }
+    const res = await fetch(`/api/job-status?jobId=${jobId}`);
+    if (!res.ok) throw new Error("Result not ready");
 
     const data = await res.json();
 
-    if (!data?.html) {
-      throw new Error("Invalid result");
+    if (!data.contentJson) {
+      throw new Error("Result not ready");
     }
 
-    return data.html as string;
+    return data.contentJson;
   }
+
 
   if (!job) {
     return (
@@ -250,52 +260,74 @@ export default function PreviewPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
 
-        <main className="flex-1 bg-slate-100">
+        <main className="flex-1 bg-slate-50">
           <section className="mx-auto max-w-7xl px-6 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full">
 
               {/* LEFT */}
               <div className="lg:col-span-8 flex flex-col gap-4 h-full">
-                <div className="flex items-center justify-between rounded-md bg-slate-50 px-4 py-2">
-                  <span className="text-sm font-semibold">
+                {/* <div className="flex items-center justify-between border-b bg-white px-5 py-3">
+                  <span className="text-sm font-medium text-slate-800">
                     Handwritten Document
                   </span>
-                  <span className="text-xs text-green-700">✓ Ready</span>
-                </div>
+                  <span className="text-xs text-emerald-600 font-medium">
+                    Ready
+                  </span>
+                </div> */}
 
-                <div className="flex-1 rounded-xl border bg-slate-50 p-3 overflow-hidden">
-                  {documentHtml && (
-                    <HtmlPreview
-                      key={`${job.state}-${job.jobId}`}
-                      htmlFragment={documentHtml}
-                      height="100%"
-                      showWatermark={!isPaid}
-                    />
+                <div className="flex-1 border bg-white overflow-hidden relative shadow-sm">
+
+
+                  {/* Preview disclaimer */}
+                  {!isPaid && (
+                   <p className="px-6 py-3 text-xs text-slate-500 border-b bg-slate-50">
+                    Preview may contain minor recognition errors. Final document can be edited.
+                  </p>
                   )}
+
+                  {/* Watermark (unchanged behavior) */}
+                  {!isPaid && (
+                    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                      <span className="rotate-[-25deg] text-4xl font-semibold tracking-widest text-slate-300/30">
+                          PREVIEW
+                        </span>
+
+                    </div>
+                  )}
+
+                  <JsonEditor
+                    initialDoc={job.contentJson}
+                    chrome="canvas"
+                    editable={false}
+                  />
                 </div>
               </div>
 
               {/* RIGHT */}
               <div className="lg:col-span-4">
-                <div className="sticky top-6 space-y-6">
+                <div className="sticky top-6 space-y-7">
 
                   {/* STATUS */}
-                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                  {/* <div className="rounded-xl border bg-white p-5 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <span className="inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                      <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-sm font-medium text-slate-900">
                           Document ready
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 leading-relaxed">
                           Processing completed successfully
                         </p>
                       </div>
                     </div>
+                  </div> */}
+                  <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 mb-3">
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Document ready
                   </div>
 
                   {/* PRIMARY ACTION */}
-                  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+                  {/* <div className="rounded-2xl border bg-white p-6 shadow-sm">
                     <button
                       onClick={() => {
                         if (isPaid) {
@@ -304,7 +336,7 @@ export default function PreviewPage() {
                           handlePaidDownload("docx");
                         }
                       }}
-                      className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition"
+                      className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 transition"
                     >
                       {isPaid ? "Download DOCX" : "Upgrade & Download"}
                     </button>
@@ -312,13 +344,48 @@ export default function PreviewPage() {
                     <p className="mt-3 text-center text-xs text-slate-500">
                       One-time payment • No subscription
                     </p>
+                  </div> */}
+                  <div className="rounded-sm border bg-white p-6 ">
+                    {!isPaid ? (
+                      <>
+                        <button
+                          onClick={() => handlePaidDownload("docx")}
+                          className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 transition"
+                        >
+                          Unlock document
+                        </button>
+
+                        <p className="mt-3 text-center text-xs text-slate-500">
+                          One-time payment • Download or edit after unlock
+                        </p>
+                      </>
+                    ) : (
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => handleDownload("docx")}
+                          className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 transition"
+                        >
+                          Download DOCX
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            router.push(`/handwritten-to-doc/editor?jobId=${job.jobId}`)
+                          }
+                          className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          Open with Advanced Editor
+                        </button>
+                      </div>
+                    )}
                   </div>
+
 
                   {/* BENEFITS */}
                   {!isPaid && (
-                    <div className="rounded-xl border bg-slate-50 p-5">
-                      <h4 className="text-xs font-semibold text-slate-700 mb-3">
-                        What you get
+                    <div className="border bg-white p-5">
+                      <h4 className="text-xs font-medium text-slate-700 mb-3 uppercase tracking-wide">
+                        Included
                       </h4>
                       <ul className="space-y-2 text-sm text-slate-600">
                         <li className="flex items-center gap-2">
@@ -336,7 +403,7 @@ export default function PreviewPage() {
 
                   {/* DOCUMENT INFO */}
                   <div className="rounded-xl border bg-white p-5">
-                    <h4 className="text-xs font-semibold text-slate-700 mb-3">
+                    <h4 className="text-xs font-medium text-slate-700 mb-3 uppercase tracking-wide">
                       Document details
                     </h4>
                     <ul className="space-y-1 text-xs text-slate-500">
@@ -347,16 +414,6 @@ export default function PreviewPage() {
                         {job.processingTime ? `~${job.processingTime}s` : "—"}
                       </li>
                     </ul>
-                  </div>
-
-                  {/* SECONDARY */}
-                  <div className="rounded-xl border bg-white p-5">
-                    <button
-                      onClick={() => router.push("/handwritten-to-doc/upload")}
-                      className="w-full rounded-lg border px-4 py-2.5 text-sm hover:bg-slate-50 transition"
-                    >
-                      Process another document
-                    </button>
                   </div>
 
                 </div>
@@ -391,7 +448,7 @@ export default function PreviewPage() {
                       {paymentGateway === "paypal"
                         ? "$5"
                         : paymentGateway === "razorpay"
-                        ? "₹399"
+                        ? "59"
                         : "—"}
                     </span>
                   </div>
@@ -400,7 +457,7 @@ export default function PreviewPage() {
                   <ul className="space-y-2 text-sm text-slate-700">
                     <li className="flex items-center gap-2">
                       <span className="text-green-600 font-semibold">✓</span>
-                      Editable DOCX file
+                      Edit in browser or download as DOCX
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-600 font-semibold">✓</span>
@@ -421,31 +478,6 @@ export default function PreviewPage() {
 
                 {/* Footer */}
                 <div className="px-6 py-4 border-t space-y-2">
-
-                  {/* Primary CTA */}
-                 {/* <button
-                    onClick={() => {
-                      setShowPayConfirm(false);
-
-                      if (paymentGateway === "paypal") {
-                        window.location.href = (window as any).__PAYPAL_URL__;
-                        return;
-                      }
-
-                      if (paymentGateway === "razorpay" && razorpayOptions) {
-                        const rzp = new window.Razorpay(razorpayOptions);
-                        rzp.open();   // ✅ OPEN HERE
-                        return;
-                      }
-                    }}
-                    className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition"
-                  >
-                    Pay {paymentGateway === "paypal"
-                      ? "$5"
-                      : paymentGateway === "razorpay"
-                      ? "₹399"
-                      : "—"} & Download
-                  </button> */}
 
                   <button
                     disabled={isPaying}
@@ -513,7 +545,7 @@ export default function PreviewPage() {
                         {paymentGateway === "paypal"
                           ? "$5"
                           : paymentGateway === "razorpay"
-                          ? "₹399"
+                          ? "₹59"
                           : "—"}{" "}
                         & Download
                       </>
@@ -546,7 +578,15 @@ export default function PreviewPage() {
             </div>
           )}
         </main>
-
+{/* SECONDARY */}
+                  {/* <div className="rounded-xl border bg-white p-5 ">
+                    <button
+                      onClick={() => router.push("/handwritten-to-doc/upload")}
+                      className="w-full rounded-lg border px-4 py-2.5 text-sm hover:bg-slate-50 transition"
+                    >
+                      Process another document
+                    </button>
+                  </div>         */}
         <Footer />
       </div>
     </>

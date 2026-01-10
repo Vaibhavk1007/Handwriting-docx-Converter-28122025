@@ -4,41 +4,55 @@ import { FileText } from "lucide-react"
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-            <FileText className="h-6 w-6 text-foreground" />
-            <span className="text-foreground">Handwritten → DOC</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between">
+
+          {/* Left: Brand + Nav */}
+          <div className="flex items-center gap-8">
             <Link
-              href="/pricing"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              href="/"
+              className="flex items-center gap-2 text-sm font-semibold text-foreground"
             >
-              Pricing
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/90">
+                <FileText className="h-4 w-4 text-white" />
+              </div>
+              <span className="tracking-tight">Formyxa</span>
             </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              About
+
+            <nav className="hidden md:flex items-center gap-6 text-sm">
+              <Link
+                href="/pricing"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/about"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                About
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Privacy
+              </Link>
+            </nav>
+          </div>
+
+          {/* Right: CTA */}
+          <Button
+            size="sm"
+            className="h-8 px-4 text-sm font-medium"
+            asChild
+          >
+            <Link href="/handwritten-to-doc/upload">
+              Get Started
             </Link>
-            <Link
-              href="/privacy"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Privacy
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* <Button variant="ghost" size="sm">
-            Sign In
-          </Button> */}
-          <Button variant="outline" size="sm" className="hidden sm:inline-flex bg-transparent" asChild>
-            <Link href="/handwritten-to-doc/upload">Get Started</Link>
           </Button>
+
         </div>
       </div>
     </header>

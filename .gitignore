@@ -27,3 +27,13 @@ export_service/venv/
 venv/
 __pycache__/
 *.pyc
+
+# uploads & temp
+uploads/
+*.pdf
+*.docx
+*.zip
+*.txt
+
+# test files
+test.*

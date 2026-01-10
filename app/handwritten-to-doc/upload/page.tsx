@@ -8,10 +8,10 @@ import Footer from "@/components/footer";
 import UploadArea from "@/components/upload-area";
 import { Info, Shield } from "lucide-react";
 import { saveJob } from "@/lib/jobStore";
+import { apiFetch } from "@/lib/api";
 
 export default function UploadPage() {
   const router = useRouter();
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [strictMode, setStrictMode] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -36,52 +36,70 @@ export default function UploadPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(
+          data?.error ||
+            "Please upload PDF, JPG, PNG, or GIF files only."
+        );
+      }
+      const data = await res.json();
 
-      const { jobId, filePath } = await res.json();
+      /* ---------- DIGITAL ---------- */
+      if (data.mode === "digital") {
+        saveJob({
+          jobId: "digital-preview",
+          createdAt: startTime,
+          filePath: data.filePath,
+          file: selectedFile,              // ✅ REQUIRED
+          strict: strictMode,
+          state: "free-ready",
+          source: "digital-pdf",
+        });
 
+        setUploading(false);
+        router.push("/handwritten-to-doc/free-preview");
+        return;
+      }
+
+      /* ---------- SCANNED ---------- */
       saveJob({
-        jobId,
+        jobId: data.jobId,
         createdAt: startTime,
-        filePath,
+        filePath: data.filePath,
         strict: strictMode,
         state: "processing",
+        source: "scanned",
       });
 
-      router.push(`/handwritten-to-doc/process?jobId=${jobId}`);
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed. Please try again.");
       setUploading(false);
+      router.push(`/handwritten-to-doc/process?jobId=${data.jobId}`);
+
+    } catch (err: any) {
+      console.error(err);
+
+      const msg =
+        err?.message ||
+        "Please upload PDF, JPG, PNG, or GIF files only.";
+
+      alert(msg);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-
       <main className="flex-1 bg-muted/30">
         <section className="mx-auto max-w-3xl px-4 py-12 space-y-6">
-          <UploadArea onFileUpload={handleFileUpload} />
-
-          {selectedFile && (
-            <div className="rounded-xl border bg-white p-4 text-center space-y-3">
-              <p className="text-sm font-medium">{selectedFile.name}</p>
-
-              <button
-                onClick={handleConvert}
-                disabled={uploading}
-                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {uploading ? "Uploading…" : "Convert to Word"}
-              </button>
-            </div>
-          )}
-
+          <UploadArea
+            onFileUpload={handleFileUpload}
+            selectedFile={selectedFile}
+            uploading={uploading}
+            onConvert={handleConvert}
+          />
           <InfoBlock />
         </section>
       </main>
-
       <Footer />
     </div>
   );

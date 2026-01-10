@@ -3,10 +3,39 @@
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { Check } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+
+/* ================= PRICING CONFIG ================= */
+
+const PRICING = {
+  IN: {
+    currency: "₹",
+    amount: 59,
+    label: "/ document",
+    display: "₹399",
+    gateway: "razorpay",
+  },
+  US: {
+    currency: "$",
+    amount: 5,
+    label: "/ document",
+    display: "$5",
+    gateway: "paypal",
+  },
+}
 
 export default function PricingPage() {
-  const [mode] = useState<"one-time" | "subscription">("one-time")
+  const [region, setRegion] = useState<"IN" | "US">("IN")
+
+  /* ================= REGION DETECTION (V1) ================= */
+  useEffect(() => {
+    const locale = navigator.language || ""
+    if (!locale.toLowerCase().includes("in")) {
+      setRegion("US")
+    }
+  }, [])
+
+  const price = PRICING[region]
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -14,6 +43,7 @@ export default function PricingPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
+
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto">
             <h1 className="text-3xl font-semibold tracking-tight">
@@ -34,12 +64,16 @@ export default function PricingPage() {
               </h3>
 
               <div className="mt-4">
-                <span className="text-4xl font-semibold">₹399</span>
-                <span className="text-sm text-muted-foreground"> / document</span>
+                <span className="text-4xl font-semibold">
+                  {price.display}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {" "}{price.label}
+                </span>
               </div>
 
               <p className="mt-3 text-sm text-muted-foreground">
-                Best for occasional usage
+                One-time payment. No subscription.
               </p>
 
               <ul className="mt-6 space-y-3 text-sm">
@@ -56,7 +90,9 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <button className="mt-8 w-full rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-black/90">
+              <button
+                className="mt-8 w-full rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-black/90"
+              >
                 Pay & Download
               </button>
             </div>

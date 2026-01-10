@@ -24,30 +24,30 @@ export default function HandwrittenToDocPage() {
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-10 md:pb-24">
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-12 md:pt-14 md:pb-16">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="flex flex-col gap-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium w-fit">
+            <div className="flex flex-col gap-6">
+              {/* <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium w-fit">
                 <Sparkles className="h-3.5 w-3.5" />
                 Powered by AI Vision & OCR
-              </div>
+              </div> */}
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance leading-tight">
                 Turn handwritten and scanned documents into clean, editable Word files
               </h1>
 
-              <p className="text-lg md:text-xl text-muted-foreground text-pretty leading-relaxed">
-                Convert handwritten pages, scanned forms, and PDFs into professionally formatted DOCX files — with strict accuracy for official use.
+              <p className="text-base md:text-lg text-muted-foreground leading-snug max-w-lg">
+                Convert handwritten pages, scanned forms, and PDFs into clean, structured Word documents — fully editable and ready for official use.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-1">
                 <Button
                   size="lg"
                   asChild
                   className="text-base font-medium px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-shadow"
                 >
                   <Link href="/handwritten-to-doc/upload">
-                    Upload a Document
+                    Upload your document
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -64,64 +64,114 @@ export default function HandwrittenToDocPage() {
               <p className="text-sm text-muted-foreground">No signup required • Files deleted automatically • Handles messy handwriting</p>
             </div>
 
-            <div className="relative">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Before card */}
-                <Card className="p-6 space-y-3 shadow-lg">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Handwritten or scanned document
+           <div className="relative">
+              <div className="relative grid grid-cols-2 gap-10 items-center">
+
+                  {/* BEFORE */}
+                  <div className="relative rounded-2xl border border-primary/30 bg-white p-4 shadow-md">
+                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Handwritten or scanned document
+                    </div>
+
+                    <div className="relative aspect-[3/4] rounded-xl bg-white overflow-hidden border">
+                      <Image
+                        src="/images/legal-doc1.png"
+                        alt="Scanned document"
+                        fill
+                        priority
+                        className="object-contain grayscale contrast-75 brightness-95"
+                      />
+                    </div>
                   </div>
 
-                  <div className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border bg-muted">
-                    <Image
-                      src="/images/handwritten-before1.png"
-                      alt="Handwritten notes example"
-                      fill
-                      className="object-cover"
-                      priority
-                    />
+                  {/* ARROW (FLOW CUE) */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground text-3xl select-none">
+                    →
                   </div>
-                </Card>
 
-                {/* After card */}
-                <Card className="p-6 space-y-3 shadow-xl border-2 border-primary/10 mt-8">
-                  <div className="text-xs font-semibold text-foreground uppercase tracking-wider">Clean, editable Word document</div>
-                  <div className="aspect-[3/4] rounded-lg bg-card border border-border p-4 flex flex-col gap-2">
-                    <div className="h-2 bg-foreground rounded w-3/4"></div>
-                    <div className="h-2 bg-muted-foreground/30 rounded w-full"></div>
-                    <div className="h-2 bg-muted-foreground/30 rounded w-5/6"></div>
-                    <div className="h-2 bg-muted-foreground/30 rounded w-full"></div>
-                    <div className="h-2 bg-muted-foreground/30 rounded w-4/5"></div>
+                  {/* AFTER */}
+                  <div className="relative rounded-2xl border border-primary/30 bg-white p-4 shadow-md">
+                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                      Clean, editable Word document
+                    </div>
+
+                    <div className="relative aspect-[3/4] rounded-xl bg-white overflow-hidden border shadow-inner">
+                    <div className="absolute top-0 left-0 right-0 h-8 bg-muted/40 border-b flex items-center px-3 text-[10px] text-muted-foreground">
+                      Microsoft Word • .docx
+                    </div>
+                      <Image
+                        src="/images/legal-doc1.png"
+                        alt="Editable Word document"
+                        fill
+                        priority
+                        className="object-contain pt-8"
+                      />
+
+                      {/* AFTER BADGE */}
+                      <div className="absolute top-3 right-3 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold text-white shadow">
+                        AFTER
+                      </div>
+                    </div>
+
+                    {/* TRUST MICRO-COPY */}
+                    <p className="mt-3 text-xs text-muted-foreground/70">
+                      Fully editable • Formatting preserved • Ready for official use
+                    </p>
+
+                    {/* SUBTLE GLOW */}
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-primary/20" />
                   </div>
-                </Card>
-              </div>
+
+                </div>
+
             </div>
           </div>
         </section>
 
-        <section className="border-y border-border bg-card py-8">
+        <section className="border-y border-border bg-card/50 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <FileCheck className="h-8 w-8 text-primary mb-1" />
-                <p className="text-sm font-medium text-foreground">Works with handwritten and scanned documents</p>
+            <div className="grid md:grid-cols-3 gap-5 text-center">
+
+              <div className="flex flex-col items-center gap-2 rounded-lg bg-background p-4 shadow-sm">
+                <FileCheck className="h-6 w-6 text-primary" />
+                <p className="text-sm font-medium text-foreground">
+                  Works with handwritten and scanned documents
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Supports photos, scans, and mixed-quality inputs
+                </p>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <Brain className="h-8 w-8 text-primary mb-1" />
-                <p className="text-sm font-medium text-foreground">Preserves structure and formatting</p>
+
+              <div className="flex flex-col items-center gap-2 rounded-lg bg-background p-4 shadow-sm">
+                <Brain className="h-6 w-6 text-primary" />
+                <p className="text-sm font-medium text-foreground">
+                  Preserves structure and formatting
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Tables, headings, and layout remain intact
+                </p>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <Users className="h-8 w-8 text-primary mb-1" />
-                <p className="text-sm font-medium text-foreground">Designed for forms, applications, and records</p>
+
+              <div className="flex flex-col items-center gap-2 rounded-lg bg-background p-4 shadow-sm">
+                <Users className="h-6 w-6 text-primary" />
+                <p className="text-sm font-medium text-foreground">
+                  Designed for forms, applications, and records
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Built for official and professional use
+                </p>
               </div>
+
             </div>
           </div>
         </section>
+
 
         <section className="py-20 md:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
             <div className="text-center space-y-4 mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight">
                 Before → After
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -130,9 +180,10 @@ export default function HandwrittenToDocPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {/* Left: Before card */}
-              <Card className="overflow-hidden shadow-lg">
-                <div className="aspect-[4/3] bg-muted/30 border-b-2 border-border flex items-center justify-center p-8">
+
+              {/* BEFORE */}
+              <Card className="overflow-hidden shadow-sm">
+                <div className="aspect-[4/3] bg-muted/30 border-b border-border flex items-center justify-center p-8">
                   <div className="relative aspect-[4/3] w-full">
                     <Image
                       src="/images/handwritten-before1.png"
@@ -143,82 +194,85 @@ export default function HandwrittenToDocPage() {
                   </div>
                 </div>
                 <div className="p-6">
-                  <p className="text-sm text-muted-foreground text-center">Difficult to read and share digitally</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Difficult to read and share digitally
+                  </p>
                 </div>
               </Card>
 
-              {/* Right: After card */}
-              <Card className="overflow-hidden shadow-xl border-2 border-primary/20">
-                <div className="aspect-[4/3] bg-card border-b-2 border-border p-8">
+              {/* AFTER */}
+              <Card className="overflow-hidden shadow-md border border-primary/20">
+                <div className="aspect-[4/3] bg-card border-b border-border p-8">
                   <div className="space-y-5 text-left bg-white rounded-lg border border-border p-6 h-full">
-                      {/* Document title */}
-                      <div className="font-bold text-base text-foreground">
-                        Job Application
-                      </div>
 
-                      {/* Personal details */}
-                      <div className="text-sm space-y-2">
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground">
-                          <p>
-                            <span className="font-medium text-foreground">Full Name:</span>{" "}
-                            Emily Johnson
-                          </p>
-                          <p>
-                            <span className="font-medium text-foreground">Phone:</span>{" "}
-                            (555) 123-4567
-                          </p>
-                          <p className="col-span-2">
-                            <span className="font-medium text-foreground">
-                              Position Applied For:
-                            </span>{" "}
-                            Office Assistant
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="h-px bg-border" />
-
-                      {/* Employment history */}
-                      <div className="text-sm space-y-2">
-                        <p className="font-medium text-foreground uppercase tracking-wide">
-                          Employment History
-                        </p>
-
-                        <div className="border border-border rounded-md overflow-hidden">
-                          <table className="w-full text-xs">
-                            <thead className="bg-muted/40">
-                              <tr>
-                                <th className="px-2 py-1 text-left font-medium">Date Range</th>
-                                <th className="px-2 py-1 text-left font-medium">Employer</th>
-                                <th className="px-2 py-1 text-left font-medium">Position</th>
-                              </tr>
-                            </thead>
-                            <tbody className="text-muted-foreground">
-                              <tr>
-                                <td className="px-2 py-1">05/2020 – 08/2022</td>
-                                <td className="px-2 py-1">ABC Company</td>
-                                <td className="px-2 py-1">Receptionist</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Footer hint */}
-                      <p className="text-xs text-muted-foreground pt-2">
-                        Converted from handwritten form • Fully editable in Word or Google Docs
-                      </p>
+                    <div className="font-bold text-base text-foreground">
+                      Job Application
                     </div>
 
+                    <div className="text-sm space-y-2">
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground">
+                        <p>
+                          <span className="font-medium text-foreground">Full Name:</span>{" "}
+                          Emily Johnson
+                        </p>
+                        <p>
+                          <span className="font-medium text-foreground">Phone:</span>{" "}
+                          (555) 123-4567
+                        </p>
+                        <p className="col-span-2">
+                          <span className="font-medium text-foreground">
+                            Position Applied For:
+                          </span>{" "}
+                          Office Assistant
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-border" />
+
+                    <div className="text-sm space-y-2">
+                      <p className="font-medium text-foreground uppercase tracking-wide">
+                        Employment History
+                      </p>
+
+                      <div className="border border-border rounded-md overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead className="bg-muted/40">
+                            <tr>
+                              <th className="px-2 py-1 text-left font-medium">Date Range</th>
+                              <th className="px-2 py-1 text-left font-medium">Employer</th>
+                              <th className="px-2 py-1 text-left font-medium">Position</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-muted-foreground">
+                            <tr>
+                              <td className="px-2 py-1">05/2020 – 08/2022</td>
+                              <td className="px-2 py-1">ABC Company</td>
+                              <td className="px-2 py-1">Receptionist</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground pt-2">
+                      Converted from handwritten form • Fully editable in Word or Google Docs
+                    </p>
+
+                  </div>
                 </div>
+
                 <div className="p-6 bg-primary/5">
-                  <p className="text-sm font-medium text-foreground text-center">Structure and layout preserved for official use</p>
+                  <p className="text-sm font-medium text-foreground text-center">
+                    Structure and layout preserved for official use
+                  </p>
                 </div>
               </Card>
+
             </div>
           </div>
         </section>
+
 
         <section id="how-it-works" className="bg-card py-20 md:py-32 border-y border-border">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -229,7 +283,7 @@ export default function HandwrittenToDocPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-7 max-w-6xl mx-auto">
               {[
                 {
                   step: "1",
@@ -264,7 +318,7 @@ export default function HandwrittenToDocPage() {
                     <div className="rounded-lg bg-primary/10 text-primary w-10 h-10 flex items-center justify-center flex-shrink-0">
                       <item.icon className="h-5 w-5" />
                     </div>
-                    <div className="text-sm font-bold text-muted-foreground">Step {item.step}</div>
+                    {/* <div className="text-sm font-bold text-muted-foreground">Step {item.step}</div> */}
                   </div>
                   <h3 className="text-lg font-bold text-foreground leading-snug">{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>

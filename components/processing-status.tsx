@@ -6,11 +6,12 @@ interface ProcessingStatusProps {
   state: ProcessingState
 }
 
+
 export default function ProcessingStatus({ state }: ProcessingStatusProps) {
   const steps = [
-    { key: "uploading", label: "Reading handwriting", icon: FileSearch },
-    { key: "processing", label: "Understanding structure", icon: Sparkles },
-    { key: "exporting", label: "Creating document", icon: FileCheck },
+    { key: "uploading", label: "Extracting handwritten content", icon: FileSearch },
+    { key: "processing", label: "Analyzing document structure", icon: Sparkles },
+    { key: "exporting", label: "Preparing editable document", icon: FileCheck },
   ]
 
   const getCurrentStep = () => {
@@ -28,12 +29,12 @@ export default function ProcessingStatus({ state }: ProcessingStatusProps) {
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h3 className="text-2xl font-semibold">
-            {state === "complete" ? "Document Ready!" : "Processing Your Document"}
+            {state === "complete" ? "Document Ready" : "Processing Your Scanned Document"}
           </h3>
           <p className="text-muted-foreground">
             {state === "complete"
-              ? "Your document has been successfully created"
-              : "Please wait while we convert your handwritten notes"}
+              ? "Your document is ready for review and download"
+              : "Please wait while we transform your scanned file into an editable document"}
           </p>
         </div>
 

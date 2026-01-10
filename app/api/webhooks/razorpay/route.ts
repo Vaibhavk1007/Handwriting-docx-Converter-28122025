@@ -6,7 +6,7 @@ import { updateJob } from "@/lib/jobStore-server"; // ✅ server store
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const EXPECTED_AMOUNT_INR = 39900; // ₹399 in paise
+const EXPECTED_AMOUNT_INR = 5900; // ₹399 in paise
 console.log("📥 Razorpay webhook hit");
 console.log("🕒 Time:", new Date().toISOString());
 export async function POST(req: Request) {

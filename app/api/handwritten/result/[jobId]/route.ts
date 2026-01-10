@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+
+const HANDW_API_BASE = process.env.HANDW_API_BASE!;
+const HANDW_API_KEY = process.env.HANDW_API_KEY!;
+
+
 export async function GET(
   req: Request,
-  context: { params: Promise<{ jobId: string }> }
+  context: { params: { jobId: string } }
 ) {
-  // ✅ MUST await params
-  const { jobId } = await context.params;
+  const { jobId } = context.params;
 
   if (!jobId) {
     return NextResponse.json(
@@ -17,27 +21,69 @@ export async function GET(
     );
   }
 
-  // Proxy to FastAPI
-  const res = await fetch(
-    `http://localhost:8001/result/${jobId}`,
-    { cache: "no-store" }
-  );
+  // const BACKEND_URL = "http://127.0.0.1:8000";
+
+  let res: Response;
+  try {
+   res = await fetch(
+  `${HANDW_API_BASE}/api/job-status?jobId=${jobId}`,
+      {
+        cache: "no-store",
+        headers: {
+          "x-api-key": HANDW_API_KEY,
+        },
+      }
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Backend unreachable" },
+      { status: 503 }
+    );
+  }
 
   if (!res.ok) {
+    if (res.status === 404) {
+      return NextResponse.json(
+        { status: "queued" },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Result not ready" },
-      { status: 404 }
+      { error: "Backend error" },
+      { status: 502 }
     );
   }
 
   const data = await res.json();
 
-  if (!data?.html) {
+  if (data.status === "queued" || data.status === "processing") {
+    return NextResponse.json(data, { status: 200 });
+  }
+
+  if (data.status === "failed") {
+    return NextResponse.json(data, { status: 500 });
+  }
+
+  if (data.status === "completed") {
+    if (!data.document || data.document.type !== "doc") {
+      return NextResponse.json(
+        { error: "Invalid document returned", data },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Invalid result payload" },
-      { status: 500 }
+      {
+        status: "completed",
+        contentJson: data.document,
+      },
+      { status: 200 }
     );
   }
 
-  return NextResponse.json({ html: data.html });
+  return NextResponse.json(
+    { error: "Unknown job state", data },
+    { status: 500 }
+  );
 }

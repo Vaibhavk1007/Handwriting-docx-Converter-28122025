@@ -4,41 +4,45 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to production-ready SaaS color palette */
+  /* Core surfaces */
   --background: #f5f7ff;
   --foreground: #020617;
   --card: #ffffff;
   --card-foreground: #020617;
   --popover: #ffffff;
   --popover-foreground: #020617;
-  --primary: #635bff;
+
+  /* 🔵 PRIMARY (Blue) */
+  --primary: #2563eb; /* blue-600 */
   --primary-foreground: #ffffff;
+
+  /* Secondary */
   --secondary: #e0e7ff;
-  --secondary-foreground: #635bff;
+  --secondary-foreground: #2563eb;
+
+  /* Muted */
   --muted: #f5f7ff;
   --muted-foreground: #4b5563;
-  --accent: #635bff;
+
+  /* Accent (same as primary) */
+  --accent: #2563eb;
   --accent-foreground: #ffffff;
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Borders & inputs */
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #635bff;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* Focus ring */
+  --ring: #2563eb;
+
+  /* Destructive */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Radius */
   --radius: 0.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
+
 
 .dark {
   --background: oklch(0.145 0 0);
@@ -47,33 +51,25 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+
+  /* 🔵 PRIMARY (Blue for dark) */
+  --primary: #3b82f6; /* blue-500 */
+  --primary-foreground: #ffffff;
+
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
+
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --ring: #3b82f6;
 }
+
 
 @theme inline {
   --font-sans: "Geist", "Geist Fallback";
@@ -116,6 +112,329 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+html {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Remove editor-internal spacing */
+.ProseMirror {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+/* ===== Editor / TipTap styles (unchanged) ===== */
+
+.tiptap {
+  outline: none;
+  font-family: "Times New Roman", serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: rgb(15 23 42);
+}
+
+/* ===============================
+   BASE SPACING (UNCHANGED)
+   =============================== */
+
+.tiptap .ProseMirror {
+  outline: none;
+  line-height: 1.6;
+}
+
+.tiptap .ProseMirror p {
+  margin: 0.65rem 0;
+}
+
+.tiptap .ProseMirror ul,
+.tiptap .ProseMirror ol {
+  margin: 0.6rem 0 0.8rem 1.5rem;
+  padding: 0;
+}
+
+.tiptap .ProseMirror li {
+  margin: 0.2rem 0;
+}
+
+/* Tight spacing for quick email templates */
+.tiptap--website-proposal-quick-email .ProseMirror p {
+  margin: 0.3rem 0;
+}
+
+.tiptap--website-proposal-quick-email .ProseMirror ul,
+.tiptap--website-proposal-quick-email .ProseMirror ol {
+  margin: 0.35rem 0 0.6rem 1.5rem;
+}
+
+.tiptap--website-proposal-quick-email .ProseMirror li {
+  margin: 0.15rem 0;
+}
+
+/* ===============================
+   LEGAL DOCUMENT TYPOGRAPHY FIX
+   =============================== */
+
+/* Subtle bold (matches Word legal docs) */
+.tiptap strong {
+  font-weight: 500;
+}
+
+/* Headings: SAME size as body, only weight changes */
+.tiptap h1,
+.tiptap h2,
+.tiptap h3 {
+  font-size: 11pt;      /* no size inflation */
+  font-weight: 600;    /* slightly heavier */
+  margin: 6pt 0;
+  text-align: inherit;
+}
+
+/* Prevent double-bold inside headings */
+.tiptap h1 strong,
+.tiptap h2 strong,
+.tiptap h3 strong {
+  font-weight: 600;
+}
+
+/* Centered headings when required */
+.tiptap p.center,
+.tiptap h1.center,
+.tiptap h2.center,
+.tiptap h3.center {
+  text-align: center;
+}
+
+/* ===============================
+   LISTS (UNCHANGED)
+   =============================== */
+
+.tiptap ul,
+.tiptap ol {
+  margin: 4px 0 4px 1.25rem;
+  padding: 0;
+}
+
+.tiptap li {
+  margin: 1px 0;
+}
+
+.tiptap ul {
+  list-style-type: disc;
+  list-style-position: outside;
+  margin-left: 1.5rem;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  margin-left: 1.5rem;
+}
+
+/* ===============================
+   MEDIA
+   =============================== */
+
+.tiptap img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
+
+
+
+
+
+
+/* ===========================================
+   Blog editor specific styles (Medium-like)
+   Uses .tiptap + .tiptap-blog to avoid
+   touching JsonEditor
+   =========================================== */
+
+.tiptap-blog {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: rgb(15 23 42);
+}
+
+/* Paragraph spacing – nice "one line gap" */
+.tiptap-blog p {
+  margin: 0 0 1.25em;
+}
+
+/* Headings for blog – left aligned, premium feel */
+.tiptap-blog h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.85em;
+  text-align: left;
+}
+
+.tiptap-blog h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.75em 0 0.75em;
+  text-align: left;
+}
+
+/* Lists inside blog body */
+.tiptap-blog ul,
+.tiptap-blog ol {
+  margin: 0 0 1.25em 1.4rem;
+  padding: 0;
+}
+
+.tiptap-blog li {
+  margin: 0.25em 0;
+}
+
+.editor-content {
+  font-family: "Times New Roman", Georgia, "Times", serif;
+  font-size: 12pt;
+  line-height: 1.25;
+}
+
+.editor-content p {
+  margin-top: 0;
+  margin-bottom: 6pt;
+}
+
+.editor-content h1 {
+  font-size: 18pt;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 12pt;
+}
+
+.editor-content h2 {
+  font-size: 14pt;
+  font-style: italic;
+  text-align: center;
+  margin: 8pt 0 4pt;
+}
+
+.editor-content p.center,
+.editor-content .center {
+  text-align: center;
+}
+
+
+/* Hide scrollbars but keep scroll behaviour */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;            /* Chrome, Safari, Opera */
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+/*  */
+.legal-doc {
+  font-family: "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 794px; /* ~A4 width */
+  margin: 0 auto;
+}
+
+.legal-doc .doc-title {
+  text-align: center;
+  font-size: 18px;
+  text-decoration: underline;
+  margin-bottom: 16px;
+}
+
+.legal-doc h2 {
+  font-size: 14px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
+
+.legal-doc p {
+  margin: 4px 0;
+  text-align: justify;
+}
+
+.legal-doc .sign-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin-top: 24px;
+}
+
+.legal-doc .sign-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.legal-doc .sign-line {
+  margin-top: 16px;
+}
+
+/* .tiptap p:hover,
+.tiptap h1:hover,
+.tiptap h2:hover,
+.tiptap h3:hover {
+  background-color: rgba(37, 99, 235, 0.04);
+}
+ */
+
+.tiptap table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  max-width: 100%;   /* stays inside page */
+  width: auto;       /* 🔑 lets the table shrink */
+  margin: 8px 0;
+}
+
+.tiptap table tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tiptap table th,
+.tiptap table td {
+  position: relative;         /* needed for resize handle */
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  font-size: 11px;
+  vertical-align: top;
+}
+
+.tiptap table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+}
+
+/* resize handle for columns (from prosemirror-tables) */
+.tiptap .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background-color: #cbd5f5;
+}
+
+/* keep empty cells visible */
+.tiptap table p {
+  min-height: 16px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari */
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;    /* IE and Edge */
+  scrollbar-width: none;       /* Firefox */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -124,3 +443,4 @@
     @apply bg-background text-foreground;
   }
 }
+

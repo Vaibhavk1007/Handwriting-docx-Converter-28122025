@@ -1,145 +1,91 @@
-import fs from "fs/promises";
-import path from "path";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_HTML_SIZE = 300_000; // ~300KB safety cap
-const FASTAPI_TIMEOUT_MS = 90_000;
-
-function getMimeType(filePath: string) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-  if (ext === ".gif") return "image/gif";
-  return "image/png";
-}
-
-function isSafePath(filePath: string) {
-  return !filePath.includes("..") && path.isAbsolute(filePath);
-}
+const HANDW_API_BASE = process.env.HANDW_API_BASE!;
+const HANDW_API_KEY = process.env.HANDW_API_KEY!;
 
 export async function POST(req: Request) {
-  console.log("➡️ [process] POST called");
+  console.log("➡️ [process-to-tiptap] START OCR JOB");
 
   try {
-    const body = await req.json();
+    const { jobId, filePath } = await req.json();
 
-    const {
-      filepath,
-      filePath,
-      strict = true,
-      jobId,
-    } = body as {
-      filepath?: string;
-      filePath?: string;
-      strict?: boolean;
-      jobId?: string;
-    };
-
-    const fileToUse = filepath ?? filePath;
-
-    if (!fileToUse) {
+    // 🚫 Digital PDFs must never reach here
+    if (!jobId) {
       return new Response(
-        JSON.stringify({ error: "missing filepath" }),
+        JSON.stringify({ error: "Digital PDFs cannot be processed" }),
         { status: 400 }
       );
     }
 
-    if (!isSafePath(fileToUse)) {
-      console.error("❌ Unsafe filepath:", fileToUse);
+    if (!filePath) {
       return new Response(
-        JSON.stringify({ error: "invalid filepath" }),
+        JSON.stringify({ error: "missing filePath" }),
         { status: 400 }
       );
     }
 
-    console.log("📌 jobId:", jobId ?? "unknown");
-    console.log("📄 processing file:", fileToUse);
-
-    /* ================= READ FILE ================= */
-
-    const buf = await fs.readFile(fileToUse);
-    const imageBase64 = buf.toString("base64");
-    const mime = getMimeType(fileToUse);
-
-    /* ================= FASTAPI CALL ================= */
-
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      FASTAPI_TIMEOUT_MS
-    );
-
-    let res: Response;
-    try {
-      res = await fetch("http://localhost:8001/process", {
+    /* ==================================================
+       1️⃣ REGISTER JOB (CRITICAL)
+       ================================================== */
+    const registerRes = await fetch(
+      `${HANDW_API_BASE}/api/job-register`,
+      {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": HANDW_API_KEY,
+        },
         body: JSON.stringify({
           jobId,
-          image_base64: buf.toString("base64"),
-          mode: strict ? "strict" : "normal",
+          filePath,
+          source: "scanned",
         }),
-        signal: controller.signal,
-      });
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        console.error("❌ FastAPI timeout");
-        return new Response(
-          JSON.stringify({ error: "Processing timeout" }),
-          { status: 504 }
-        );
       }
-      throw err;
-    } finally {
-      clearTimeout(timeout);
-    }
+    );
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("❌ FastAPI error:", text);
+    if (!registerRes.ok) {
+      const text = await registerRes.text();
+      console.error("❌ Job register failed:", text);
       return new Response(
-        JSON.stringify({ error: "Inference failed", details: text }),
-        { status: 500 }
-      );
-    }
-    
-    /* ================= PARSE RESPONSE ================= */
-
-    let data: any;
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.error("❌ Invalid FastAPI JSON");
-      return new Response(
-        JSON.stringify({ error: "Invalid FastAPI response" }),
+        JSON.stringify({ error: "failed to register job" }),
         { status: 500 }
       );
     }
 
-    if (!data?.jobId) {
-      console.error("❌ FastAPI did not return jobId:", data);
+    /* ==================================================
+       2️⃣ START OCR (jobId ONLY)
+       ================================================== */
+    const processRes = await fetch(
+      `${HANDW_API_BASE}/api/handwritten/process`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": HANDW_API_KEY,
+        },
+        body: JSON.stringify({ jobId }),
+      }
+    );
+
+    if (!processRes.ok) {
+      const text = await processRes.text();
+      console.error("❌ Failed to start OCR:", text);
       return new Response(
-        JSON.stringify({ error: "FastAPI did not return jobId" }),
+        JSON.stringify({ error: "failed to start processing" }),
         { status: 500 }
       );
     }
 
-    /* ================= SUCCESS ================= */
+    console.log("✅ OCR job started:", jobId);
 
     return new Response(
-      JSON.stringify({
-        jobId: data.jobId,
-        status: "queued",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      JSON.stringify({ started: true }),
+      { status: 200 }
     );
 
   } catch (err: any) {
-    console.error("🔥 Fatal process error:", err);
+    console.error("🔥 Process route error:", err);
     return new Response(
       JSON.stringify({ error: err?.message || String(err) }),
       { status: 500 }
