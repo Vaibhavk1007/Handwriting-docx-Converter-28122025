@@ -55,7 +55,7 @@ export default function FreePreviewPage() {
 
               const res = await fetch("/api/export-digital-docx", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                // headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   filePath: job.filePath,
                 }),

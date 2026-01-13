@@ -728,6 +728,28 @@ async def export_digital_docx(payload: ExportRequest):
         }
     )
 
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        os.makedirs("uploads", exist_ok=True)
+
+        filename = f"{datetime.now().timestamp()}_{file.filename}"
+        file_path = os.path.join("uploads", filename)
+
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        return {
+            "filePath": file_path
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="UPLOAD_FAILED")
+
+
+
 @app.post("/api/parse-document")
 async def parse_document_route(
     file: UploadFile = File(...),

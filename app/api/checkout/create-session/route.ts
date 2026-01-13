@@ -9,7 +9,8 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-const PRICE_INR = 39900; // ₹399 in paise
+// const PRICE_INR = 39900; // ₹399 in paise
+const PRICE_INR = 5900; // ₹59 in paise
 const PRICE_USD = "5.00";
 
 // function getCountry(req: Request) {

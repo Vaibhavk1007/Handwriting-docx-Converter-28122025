@@ -85,11 +85,11 @@ export function FormyxaSidebar({
 
   return (
     <div
-      className={[
-        "bg-[#fafafa] border-r border-slate-100 transition-all duration-300 flex flex-col",
-        collapsed ? "w-14" : "w-[260px]",
-      ].join(" ")}
-    >
+        className={[
+          "sticky top-0 h-screen bg-white border-r border-slate-200 transition-all duration-300 flex flex-col",
+          collapsed ? "w-14" : "w-[260px]",
+        ].join(" ")}
+      >
       {/* ================= TABS ================= */}
       <div className="border-b border-slate-200 p-2">
         <div className="flex flex-col gap-1">
@@ -120,7 +120,7 @@ export function FormyxaSidebar({
       </div>
 
       {/* ================= CONTENT ================= */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-white">
         {!collapsed && (
           <>
             {activeTab === "structure" &&

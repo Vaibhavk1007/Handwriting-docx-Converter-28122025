@@ -29,6 +29,32 @@ export default function PreviewPage() {
   const [razorpayOptions, setRazorpayOptions] = useState<any>(null);
   const [isPaying, setIsPaying] = useState(false);
 
+
+  function countWordsFromTipTap(doc: any): number {
+    if (!doc?.content) return 0;
+
+    let text = "";
+
+    const walk = (node: any) => {
+      if (!node) return;
+
+      if (node.type === "text" && typeof node.text === "string") {
+        text += " " + node.text;
+      }
+
+      if (Array.isArray(node.content)) {
+        node.content.forEach(walk);
+      }
+    };
+
+    walk(doc);
+
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+  }
+
   /* ================= LOAD JOB (STRICT) ================= */
   useEffect(() => {
     if (!jobId) {
@@ -50,8 +76,16 @@ export default function PreviewPage() {
     }
 
     // ✅ If HTML already exists → render immediately
-     if (storedJob.contentJson) {
-      setJob(storedJob);
+    if (storedJob.contentJson) {
+      const wordCount = countWordsFromTipTap(storedJob.contentJson);
+
+      const updatedJob = {
+        ...storedJob,
+        wordCount,
+      };
+
+      updateJob({ wordCount });
+      setJob(updatedJob);
       return;
     }
 
@@ -407,12 +441,8 @@ export default function PreviewPage() {
                       Document details
                     </h4>
                     <ul className="space-y-1 text-xs text-slate-500">
-                      <li>Words: {job.wordCount ?? "—"}</li>
-                      <li>Pages: {job.wordCount ? Math.max(1, Math.ceil(job.wordCount / 450)) : "—"}</li>
-                      <li>
-                        Processing time:{" "}
-                        {job.processingTime ? `~${job.processingTime}s` : "—"}
-                      </li>
+                      <li>Words: {job.wordCount ?? 0}</li>
+                      <li>Pages: 1</li>
                     </ul>
                   </div>
 

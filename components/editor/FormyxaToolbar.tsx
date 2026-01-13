@@ -79,6 +79,8 @@ export function FormyxaToolbar({
   const disabled = !editor;
   const tinyIconBtn =
   "inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors";
+  const toolbarGroup =
+  "flex items-center gap-1 rounded-lg bg-white/70 px-1.5 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
   const [textStyle, setTextStyle] = useState("normal");
   const [fontFamily, setFontFamily] = useState("inter");
   const [fontSize, setFontSize] = useState("11");
@@ -223,7 +225,7 @@ export function FormyxaToolbar({
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-100">
+    <div className="sticky top-0 z-50 bg-[#F8FAFC]/90 backdrop-blur-md border-b border-slate-200">
       {/* Row 1 */}
       <div className="h-12 flex items-center justify-between px-4 border-b border-slate-100">
         <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -285,8 +287,8 @@ export function FormyxaToolbar({
       </div>
 
       {/* Row 2 */}
-      <div className="h-12 flex items-center px-4 gap-2 overflow-visible">
-        <div className="flex items-center gap-0.5">
+      <div className="h-11 flex items-center px-4 gap-2 overflow-visible">
+        <div className={toolbarGroup}>
           <button
             type="button"
             className={["p-2 hover:bg-slate-100 rounded-md", disabled ? "opacity-40" : ""].join(" ")}
@@ -306,7 +308,7 @@ export function FormyxaToolbar({
         </div>
 
         <div className="h-5 w-px bg-slate-100" />
-
+       <div className={toolbarGroup}>
         <select value={zoomValue} onChange={(e) => applyZoom(e.target.value)} className={tinySelect}>
           {[50, 75, 100, 125, 150].map((v) => (
             <option key={v} value={String(v)}>
@@ -314,10 +316,10 @@ export function FormyxaToolbar({
             </option>
           ))}
         </select>
-
+        </div>
         <div className="h-6 w-px bg-slate-200 mx-2" />
 
-        <div className="flex items-center gap-1.5">
+        <div className={toolbarGroup}>
           <select
             value={textStyle}
             onChange={(e) => applyTextStyle(e.target.value)}
@@ -405,9 +407,9 @@ export function FormyxaToolbar({
 
         <div className="h-6 w-px bg-slate-200 mx-2" />
 
-        <div className="flex items-center gap-1">
+        <div className={toolbarGroup}>
           <button type="button" className={toolBtn(isActive("bold"))} onClick={() => safeRun((c) => c.toggleBold())} title="Bold">
-            <Bold className="w-4 h-4" />
+            <Bold className="w-4 h-4 text-slate-600" />
           </button>
           <button type="button" className={toolBtn(isActive("italic"))} onClick={() => safeRun((c) => c.toggleItalic())} title="Italic">
             <Italic className="w-4 h-4" />
@@ -424,7 +426,7 @@ export function FormyxaToolbar({
 
         <div className="h-6 w-px bg-slate-200 mx-2" />
 
-        <div className="flex items-center gap-1">
+        <div className={toolbarGroup}>
           <button type="button" className={toolBtn(isAlignActive("left"))} onClick={() => safeRun((c) => c.setTextAlign("left"))} title="Align left">
             <AlignLeft className="w-4 h-4" />
           </button>
@@ -439,7 +441,7 @@ export function FormyxaToolbar({
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className={toolbarGroup}>
           <button type="button" className={toolBtn(isActive("bulletList"))} onClick={() => safeRun((c) => c.toggleBulletList())} title="Bullets">
             <List className="w-4 h-4" />
           </button>
@@ -454,7 +456,7 @@ export function FormyxaToolbar({
           <button
             type="button"
             onClick={() => setInsertOpen((v) => !v)}
-            className="px-2.5 py-2 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1.5 text-slate-500 hover:text-slate-700"
+            className="px-3 py-2 rounded-lg bg-white/70 hover:bg-white shadow-sm transition-colors flex items-center gap-1.5 text-slate-600"
             title="Insert"
           >
             <span className="text-lg leading-none">+</span>

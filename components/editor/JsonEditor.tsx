@@ -8,7 +8,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import { Node, Mark, Extension } from "@tiptap/core";
-import type { Content } from "@tiptap/core";
+
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
@@ -20,19 +20,16 @@ import type { BrandProfile, SignatoryProfile } from "@/types/doc-layout";
 import { getLayoutForTemplateSlug } from "@/lib/docLayout";
 import { DocumentPageShell } from "./DocumentPageShell";
 import { LineHeight } from "@/components/editor/extensions/LineHeight";
-import type { Command } from "@tiptap/core";
+
 type EditorViewMode = "document" | "blog";
 
 type JsonEditorProps = {
   initialDoc: any;
-
-  /* OPTIONAL — editor mode only */
   fileName?: string;
   onFileNameChange?: (name: string) => void;
   onDocChange?: (doc: any) => void;
   onExport?: (doc: any, fileName: string) => Promise<void>;
   onSave?: (doc: any, fileName: string) => Promise<void>;
-
   initialMode?: EditorViewMode;
 
   templateSlug?: string;
@@ -40,12 +37,11 @@ type JsonEditorProps = {
   brand?: BrandProfile;
   signatory?: SignatoryProfile;
 
+  /** NEW */
   chrome?: "full" | "canvas";
-  zoom?: number;
+  zoom?: number; // controlled zoom
   onZoomChange?: (z: number) => void;
   onEditorReady?: (editor: any) => void;
-
-  /** 🔑 NEW */
   editable?: boolean;
 };
 
@@ -170,12 +166,11 @@ const UnderlineMark = Mark.create({
   addCommands() {
     return {
       toggleUnderline:
-        (): Command =>
+        () =>
         ({ commands }) =>
           commands.toggleMark(this.name),
-    };
-  }
-
+    } as any;
+  },
 });
 
 // ---------------------------------------------------------------------
@@ -221,11 +216,11 @@ export function JsonEditor({
   zoom: zoomProp,
   onZoomChange,
   onEditorReady,
-  editable = true, // ✅ default true
+  editable = true,
 }: JsonEditorProps) {
   const safeInitialDoc = useMemo(() => normalizeDoc(initialDoc), [initialDoc]);
   const isCanvas = chrome === "canvas";
-  const isReadOnly = !editable;
+
   const [localFileName, setLocalFileName] = useState(fileName);
   const [docJson, setDocJson] = useState<any>(safeInitialDoc);
 
@@ -260,14 +255,17 @@ export function JsonEditor({
       FontSizeMark,
       UnderlineMark,
       PageBreak,
+      
     ],
     content: DEFAULT_DOC,
-    editable: editable ?? true,
+    editable,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
+      if (!onDocChange) return; // 👈 preview-safe
+
       const json = editor.getJSON();
       setDocJson(json);
-      onDocChange?.(json);
+      onDocChange(json);
     },
   });
 
@@ -299,19 +297,14 @@ export function JsonEditor({
     if (!editor) return;
     editor.commands.setContent(safeInitialDoc);
     setDocJson(safeInitialDoc);
-    onDocChange?.(safeInitialDoc);
+    onDocChange(safeInitialDoc);
   };
 
   const handleExportClick = async () => {
     if (!docJson) return;
     try {
       setExporting(true);
-      if (!onExport) return;
-      await onExport(
-        docJson,
-        localFileName || fileName || "Document"
-      );
-
+      await onExport(docJson, localFileName || fileName);
     } finally {
       setExporting(false);
     }
@@ -319,11 +312,12 @@ export function JsonEditor({
 
   const handleSaveClick = async () => {
     if (!onSave || !docJson) return;
-
-    await onSave(
-      docJson,
-      localFileName || fileName || "Document"
-    );
+    try {
+      setSaving(true);
+      await onSave(docJson, localFileName || fileName);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleZoomChange = (value: number) => {
@@ -334,7 +328,7 @@ export function JsonEditor({
   const handleFileNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
     setLocalFileName(next);
-    onFileNameChange?.(next);
+    onFileNameChange(next);
   };
 
   const effectiveMode: EditorViewMode = isCanvas ? "document" : viewMode;
@@ -342,7 +336,7 @@ export function JsonEditor({
   // -------------------- CANVAS (Figma-style) --------------------
   if (isCanvas) {
     return (
-      <div className="flex-1 overflow-y-auto p-0">
+      <div className="flex-1 overflow-y-auto p-8">
         <div id="formyxa-doc-top" />
         <div className="max-w-[8.5in] mx-auto">
           {layout.shellVariant === "page" ? (
@@ -356,9 +350,21 @@ export function JsonEditor({
                 zoom={zoom}
               />
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg p-16 min-h-[11in] flex items-center justify-center">
-                <p className="text-sm text-slate-400">Loading…</p>
-              </div>
+         <div
+            className="
+              bg-white
+              rounded-[6px]
+              shadow-[0_1px_2px_rgba(0,0,0,0.06),_0_8px_24px_rgba(0,0,0,0.08)]
+              p-16
+              min-h-[11in]
+              flex
+              items-center
+              justify-center
+            "
+            style={{ zoom }}
+          >
+            <p className="text-sm text-slate-400">Loading…</p>
+          </div>
             )
           ) : (
             <div
@@ -376,14 +382,15 @@ export function JsonEditor({
   // -------------------- FULL (old standalone) --------------------
   return (
     <div className="flex flex-col h-full">
-    {!isReadOnly && ( 
       <header className="border-b bg-white flex items-center justify-between px-6 py-2">
         <div className="flex items-center gap-3">
-          <input
-            className="border-0 bg-transparent text-sm font-medium px-0 py-1 focus:outline-none focus:ring-0"
-            value={localFileName}
-            onChange={handleFileNameInputChange}
-          />
+          {onFileNameChange && (
+            <input
+              className="border-0 bg-transparent text-sm font-medium px-0 py-1 focus:outline-none focus:ring-0"
+              value={localFileName}
+              onChange={handleFileNameInputChange}
+            />
+          )}
           <button
             type="button"
             onClick={resetTemplate}
@@ -437,11 +444,12 @@ export function JsonEditor({
           </button>
         </div>
       </header>
-    )}
 
-
-      {effectiveMode === "document" ? (
-        <main className="flex-1 flex justify-center items-start overflow-auto py-6 px-3 bg-slate-50">
+      {effectiveMode === "document" ? ( 
+        <main
+            className="flex-1 flex justify-center items-start overflow-auto pl-2 pr-4 bg-slate-50"
+            style={{ paddingBottom: "40vh" }}
+          >
           <div className="bg-slate-200/80 rounded-xl p-4">
             {layout.shellVariant === "page" ? (
               editor ? (
@@ -460,9 +468,20 @@ export function JsonEditor({
               )
             ) : (
               <div
-                className="bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_18px_40px_rgba(15,23,42,0.08)] rounded-md mx-auto w-[794px] min-h-[1123px] px-14 py-10 flex flex-col"
-                style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
-              >
+                  className="
+                    bg-white
+                    rounded-[6px]
+                    shadow-[0_1px_2px_rgba(0,0,0,0.06),_0_8px_24px_rgba(0,0,0,0.08)]
+                    mx-auto
+                    w-[794px]
+                    min-h-[1123px]
+                    px-14
+                    py-10
+                    flex
+                    flex-col
+                  "
+                  style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
+                >
                 {editor ? <EditorContent editor={editor} className="tiptap" /> : <p className="text-sm text-slate-400">Loading…</p>}
               </div>
             )}
@@ -472,7 +491,15 @@ export function JsonEditor({
         <main className="flex-1 flex overflow-hidden bg-slate-50">
           <div className="flex-1 overflow-auto py-6 px-4">
             <div className="max-w-3xl mx-auto">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-8 py-8">
+              <div
+                  className="
+                    bg-white
+                    rounded-[6px]
+                    shadow-[0_1px_2px_rgba(0,0,0,0.06),_0_8px_24px_rgba(0,0,0,0.08)]
+                    px-8
+                    py-8
+                  "
+                >
                 {editor ? <EditorContent editor={editor} className="tiptap" /> : <p className="text-sm text-slate-400">Loading…</p>}
               </div>
             </div>
